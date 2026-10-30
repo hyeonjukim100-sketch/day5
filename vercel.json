@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/jeju/info", "destination": "/api/jeju?which=info" },
+    { "source": "/jeju/location", "destination": "/api/jeju?which=location" }
+  ]
+}

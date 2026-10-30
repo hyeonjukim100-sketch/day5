@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>제주 자연 즐기기</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{--bg:#f4f7f6;--ink:#1d2b2a;--sub:#66777a;--line:#dde6e4;--main:#0f7d78;--soft:#e0f2f0;--c1:#e4572e;--c2:#0f7d78}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:"Malgun Gothic",system-ui,sans-serif;color:var(--ink);background:var(--bg);display:flex;flex-direction:column}
+header{background:linear-gradient(135deg,#0f7d78,#1f9fa0);color:#fff;padding:12px 18px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+header h1{margin:0;font-size:1.25rem}
+header p{margin:0;opacity:.95;font-size:.9rem}
+header .src{flex-basis:100%;margin:0;opacity:.75;font-size:.7rem}
+.wrap{flex:1;display:flex;min-height:0}
+aside{width:380px;display:flex;flex-direction:column;background:#fff;border-right:1px solid var(--line)}
+.bar{padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;border-bottom:1px solid var(--line)}
+.bar input,.bar select{padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff;min-width:0}
+.bar input{grid-column:1/3}
+.count{padding:6px 12px;font-size:.85rem;color:var(--sub);border-bottom:1px solid var(--line)}
+.list{flex:1;overflow:auto}
+.item{padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer}
+.item:hover,.item.on{background:var(--soft)}
+.item b{display:block}
+.item span{font-size:.8rem;color:var(--sub)}
+.empty{padding:30px;text-align:center;color:var(--sub)}
+#map{flex:1;min-width:0}
+.dot{background:var(--pc,#868e96);width:16px;height:16px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+.pop h3{margin:0 0 2px;font-size:1rem}
+.pop .t{color:var(--sub);font-size:.85rem;margin-bottom:6px}
+.tag{display:inline-block;background:var(--soft);color:var(--main);border-radius:99px;padding:1px 8px;font-size:.72rem;margin:0 3px 4px 0}
+.pop p{margin:6px 0;font-size:.85rem;line-height:1.5}
+.pop p .cite{display:block;margin-top:4px;font-size:.75rem;color:var(--sub)}
+.pop .addr{color:var(--sub);font-size:.8rem}
+.pop button{margin-top:4px;padding:5px 10px;border:1px solid var(--main);background:var(--main);color:#fff;border-radius:6px;cursor:pointer;font:inherit;font-size:.8rem}
+.legend{position:absolute;z-index:500;right:10px;bottom:24px;background:#fff;border-radius:8px;padding:6px 10px;font-size:.8rem;box-shadow:0 1px 5px rgba(0,0,0,.3)}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:1px 12px;font-size:.75rem}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px}
+.modal{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:16px}
+.modal.on{display:flex}
+.box{background:#fff;border-radius:14px;max-width:720px;width:100%;max-height:90vh;overflow:auto;padding:22px}
+.box h2{margin:0 0 6px}
+.box dl{display:grid;grid-template-columns:90px 1fr;gap:6px 12px;font-size:.9rem;margin:14px 0}
+.box dt{color:var(--sub)}.box dd{margin:0;word-break:break-all}
+.body{white-space:pre-wrap;line-height:1.7;font-size:.92rem;background:var(--bg);border-radius:8px;padding:12px;margin-top:8px}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.btns a,.btns button{padding:8px 14px;border-radius:8px;border:1px solid var(--main);background:#fff;color:var(--main);font:inherit;text-decoration:none;cursor:pointer}
+.btns a.p{background:var(--main);color:#fff}
+.ldot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;border:1px solid rgba(0,0,0,.15)}
+.tabs{display:flex;border-bottom:1px solid var(--line)}
+.tabs button{flex:1;padding:9px;border:0;background:#fff;font:inherit;cursor:pointer;border-bottom:3px solid transparent;color:var(--sub)}
+.tabs button.on{color:var(--main);border-bottom-color:var(--main);font-weight:bold}
+.item{display:flex;align-items:center;gap:8px}
+.item .tx{flex:1;min-width:0}
+.fav{border:1px solid var(--line);background:#fff;border-radius:99px;padding:3px 9px;cursor:pointer;font:inherit;font-size:.8rem;color:var(--sub);white-space:nowrap}
+.fav.on{background:#ffe3e3;border-color:#e4572e;color:#c92a2a}
+.pop .fav{margin-top:4px;margin-left:4px;background:#fff;color:var(--sub)}
+.pop .fav.on{background:#ffe3e3;color:#c92a2a}
+#courseView{flex:1;display:none;flex-direction:column;min-height:0}
+#courseView.on{display:flex}
+.csum{padding:10px 12px;border-bottom:1px solid var(--line);font-size:.85rem;color:var(--sub)}
+.csum b{color:var(--ink)}
+.cact{display:flex;gap:6px;margin-top:8px}
+.cact button{padding:5px 10px;border:1px solid var(--main);background:#fff;color:var(--main);border-radius:6px;cursor:pointer;font:inherit;font-size:.8rem}
+.cact button.p{background:var(--main);color:#fff}
+.cit{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line)}
+.cit .n{flex:none;width:24px;height:24px;border-radius:50%;background:#d62828;color:#fff;text-align:center;line-height:24px;font-size:.8rem;font-weight:bold}
+.cit .tx{flex:1;min-width:0;cursor:pointer}
+.cit .tx b{display:block}.cit .tx span{font-size:.78rem;color:var(--sub)}
+.cit button{border:1px solid var(--line);background:#fff;border-radius:6px;cursor:pointer;padding:2px 7px}
+.cit button:disabled{opacity:.3;cursor:default}
+#recView{flex:1;display:none;flex-direction:column;min-height:0}
+#recView.on{display:flex}
+.rec{padding:12px;border-bottom:1px solid var(--line);cursor:pointer}
+.rec:hover{background:var(--soft)}
+.rec.on{background:#e7f1ff;border-left:4px solid #1971c2}
+.rec h4{margin:0 0 3px}
+.rec .meta{font-size:.82rem;color:var(--sub)}
+.rec ol{margin:8px 0 0;padding-left:22px;font-size:.88rem}
+.rec ol li{padding:2px 0;cursor:pointer}
+.rec ol li:hover{color:#1971c2}
+.rec .cact{margin-top:8px}
+.num.blue{background:#1971c2}
+.num{width:26px;height:26px;border-radius:50%;background:#d62828;color:#fff;border:2px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.6);text-align:center;line-height:22px;font-weight:bold;font-size:.8rem}
+@media(max-width:760px){.wrap{flex-direction:column-reverse}aside{width:100%;height:42%}#map{height:58%;flex:none}}
+#boot{position:fixed;inset:0;z-index:5000;background:var(--bg);display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.7;padding:20px}
+#boot.err{color:#c92a2a}
+</style>
+</head>
+<body>
+<div id="boot"><div id="bootMsg">🌿 제주 데이터를 불러오는 중…</div></div>
+<header>
+  <h1>🌿 제주 자연 즐기기</h1>
+  <p>바람·바다·오름을 따라, 나만의 자연 코스를 만들어 보세요</p>
+  <p class="src">자료: 공공데이터포털 API · 제주특별자치도 제주역사문화 위치정보 + 일반정보</p>
+</header>
+<div class="wrap">
+  <aside>
+    <div class="bar">
+      <input id="q" type="search" placeholder="장소명, 제목, 주소, 내용 검색">
+      <select id="cat"><option value="">분류 전체</option></select>
+      <select id="dir"><option value="">디렉토리 전체</option></select>
+      <select id="city"><option value="">지역 전체</option><option>제주시</option><option>서귀포시</option></select>
+    </div>
+    <div class="tabs">
+      <button id="tabList" class="on">장소 목록</button>
+      <button id="tabCourse">♥ 내 코스 (<span id="cn">0</span>)</button>
+      <button id="tabRec">⭐ 추천 코스</button>
+    </div>
+    <div class="count" id="count"></div>
+    <div class="list" id="list"></div>
+    <div id="courseView">
+      <div class="csum" id="csum"></div>
+      <div class="list" id="clist"></div>
+    </div>
+    <div id="recView">
+      <div class="list" id="rlist"></div>
+    </div>
+  </aside>
+  <div id="map" style="position:relative"></div>
+</div>
+<div class="modal" id="modal"><div class="box" id="box"></div></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script id="main" type="text/plain">
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const none = v => !v || v === '해당없음';
+const CATS = [...new Set(DATA.map(d => d.cat))];
+// 핀 색상: 디렉토리(dir1)별. 자연은 초록, 나머지는 초록을 피한 색
+const DIR_COLOR = {
+  '자연': '#2f9e44', '의식주': '#f76707', '통과의례': '#ae3ec9', '기타': '#868e96', '신화/전설': '#d6336c',
+  '생산기술': '#e67700', '무속': '#5f3dc4', '민간신앙': '#a61e4d', '방언': '#0c8599', '사회': '#1971c2',
+  '역사': '#7b4a22', '문화': '#f06595', '관광': '#fcc419', '민속공예': '#3b5bdb',
+};
+const color = d => DIR_COLOR[d.dir1] || '#868e96';
+const DIRS = Object.keys(DIR_COLOR).filter(k => DATA.some(d => d.dir1 === k));
+
+DATA.forEach(d => {
+  d.city = d.addr.includes('서귀포시') ? '서귀포시' : d.addr.includes('제주시') ? '제주시' : '기타';
+  d.hay = [d.name, d.title, d.sub, d.addr, d.subject, d.body].join(' ').toLowerCase();
+});
+const fill = (el, key) => [...new Set(DATA.map(d => d[key]))].sort().forEach(v => el.add(new Option(v, v)));
+fill($('cat'), 'cat'); fill($('dir'), 'dir1');
+
+// 지도
+if (typeof L === 'undefined') {
+  $('map').innerHTML = '<div class="empty">지도를 불러오지 못했습니다. 인터넷 연결을 확인하세요.</div>';
+  throw new Error('Leaflet 로드 실패');
+}
+const map = L.map('map', { maxZoom: 13 }).setView([33.38, 126.55], 10);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {  maxZoom: 13, attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, OpenStreetMap contributors'
+}).addTo(map);
+
+const legend = L.control({ position: 'bottomright' });
+legend.onAdd = () => { const el = L.DomUtil.create('div', 'legend');
+  el.innerHTML = DIRS.map(k => `<div><i style="background:${DIR_COLOR[k]}"></i>${esc(k)}</div>`).join(''); return el; };
+legend.addTo(map);
+
+const markers = {};
+DATA.forEach(d => {
+  const icon = L.divIcon({ className: '', html: `<div class="dot" style="--pc:${color(d)}"></div>`, iconSize: [16, 16], iconAnchor: [8, 16], popupAnchor: [0, -14] });
+  const m = L.marker([+d.lat, +d.lon], { icon, title: d.name });
+  const text = none(d.body) ? '' : d.body.length > 160 ? d.body.slice(0, 160) + '…' : d.body;
+  d.popup = () => `<div class="pop"><h3>${esc(d.name)}</h3><div class="t">${esc(d.title)}</div>
+    <span class="tag">${esc(d.cat)}</span><span class="tag">${esc(d.dir1)}</span>
+    <div class="addr">📍 ${esc(d.addr)}</div>${text ? `<p>${esc(text)}${none(d.author) ? '' : `<span class="cite">출처: ${esc(d.author)}</span>`}</p>` : ''}
+    <button onclick="openDetail('${d.id}')">자세히 보기</button>${favBtn(d.id)}</div>`;
+  m.bindPopup(d.popup, { maxWidth: 300 });
+  m.on('click', () => mark(d.id));
+  markers[d.id] = m;
+});
+const group = L.layerGroup().addTo(map);
+
+function mark(id) {
+  document.querySelectorAll('.item').forEach(e => e.classList.toggle('on', e.dataset.id === id));
+  const el = document.querySelector('.item.on'); if (el) el.scrollIntoView({ block: 'nearest' });
+}
+
+function render(fit) {
+  const q = $('q').value.trim().toLowerCase();
+  const r = DATA.filter(d => (!q || d.hay.includes(q)) && (!$('cat').value || d.cat === $('cat').value)
+    && (!$('dir').value || d.dir1 === $('dir').value) && (!$('city').value || d.city === $('city').value))
+    .sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+  group.clearLayers();
+  r.forEach(d => group.addLayer(markers[d.id]));
+  $('count').textContent = `총 ${DATA.length}건 중 ${r.length}건`;
+  $('list').innerHTML = r.length ? r.map(d => `<div class="item" data-id="${d.id}">
+    <div class="tx"><b><i class="ldot" style="background:${color(d)}"></i>${esc(d.name)}</b><span>${esc(d.cat)} · ${esc(d.dir1)} · ${esc(d.city)}</span></div>${favBtn(d.id)}</div>`).join('')
+    : '<div class="empty">검색 결과가 없습니다.</div>';
+  if (fit && r.length) map.fitBounds(L.latLngBounds(r.map(d => [+d.lat, +d.lon])).pad(0.15), { maxZoom: 13 });
+}
+// ---- 찜 / 내 코스: 찜을 누른 순서대로 지도에 선으로 이어 줌 ----
+let course = [];
+try { course = JSON.parse(localStorage.getItem('jeju-course') || '[]').filter(id => DATA.some(d => d.id === id)); } catch (e) {}
+const courseLayer = L.layerGroup().addTo(map);
+const byId = id => DATA.find(d => d.id === id);
+const favBtn = id => course.includes(id)
+  ? `<button class="fav on" data-fav="${id}" onclick="event.stopPropagation();toggleFav('${id}')">♥ 코스 ${course.indexOf(id) + 1}번</button>`
+  : `<button class="fav" data-fav="${id}" onclick="event.stopPropagation();toggleFav('${id}')">♡ 찜</button>`;
+const km = (a, b) => { const r = Math.PI / 180, dLa = (b.lat - a.lat) * r, dLo = (b.lon - a.lon) * r;
+  const h = Math.sin(dLa / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLo / 2) ** 2;
+  return 12742 * Math.asin(Math.sqrt(h)); };
+
+function toggleFav(id) {
+  const i = course.indexOf(id);
+  if (i >= 0) course.splice(i, 1); else course.push(id);   // 누른 순서가 곧 코스 순서
+  saveCourse();
+}
+function moveStop(i, dir) { const j = i + dir; if (j < 0 || j >= course.length) return;
+  [course[i], course[j]] = [course[j], course[i]]; saveCourse(); }
+function removeStop(i) { course.splice(i, 1); saveCourse(); }
+function clearCourse() { if (course.length && confirm('내 코스를 모두 지울까요?')) { course = []; saveCourse(); } }
+function fitCourse() { if (course.length) map.fitBounds(L.latLngBounds(course.map(id => [+byId(id).lat, +byId(id).lon])).pad(0.2), { maxZoom: 13 }); }
+function saveCourse() {
+  try { localStorage.setItem('jeju-course', JSON.stringify(course)); } catch (e) {}
+  renderCourse();
+  // 찜 버튼 문구와 열려 있는 팝업 갱신
+  document.querySelectorAll('#list .fav').forEach(b => b.outerHTML = favBtn(b.dataset.fav));
+  DATA.forEach(d => { const p = markers[d.id].getPopup(); if (p && p.isOpen()) p.setContent(d.popup()); });
+}
+function renderCourse() {
+  $('cn').textContent = course.length;
+  courseLayer.clearLayers();
+  const pts = course.map(id => byId(id));
+  if (pts.length > 1) L.polyline(pts.map(d => [+d.lat, +d.lon]), { color: '#d62828', weight: 4, opacity: .85, dashArray: '10 8' }).addTo(courseLayer);
+  pts.forEach((d, i) => L.marker([+d.lat, +d.lon], {
+    icon: L.divIcon({ className: '', html: `<div class="num">${i + 1}</div>`, iconSize: [26, 26], iconAnchor: [13, 13] }),
+    zIndexOffset: 1000, title: `${i + 1}. ${d.name}`,
+  }).on('click', () => markers[d.id].openPopup()).addTo(courseLayer));
+  let total = 0; pts.forEach((d, i) => { if (i) total += km({ lat: +pts[i - 1].lat, lon: +pts[i - 1].lon }, { lat: +d.lat, lon: +d.lon }); });
+  $('csum').innerHTML = pts.length
+    ? `<b>${pts.length}곳</b> · 직선거리 합계 약 <b>${total.toFixed(1)} km</b><div class="cact"><button class="p" onclick="fitCourse()">코스 전체 보기</button><button onclick="clearCourse()">모두 지우기</button></div>`
+    : '장소 목록이나 핀 팝업에서 <b>♡ 찜</b>을 누르면 누른 순서대로 코스가 만들어져요.';
+  $('clist').innerHTML = pts.map((d, i) => `<div class="cit" data-id="${d.id}"><div class="n">${i + 1}</div>
+    <div class="tx"><b>${esc(d.name)}</b><span>${esc(d.dir1)} · ${esc(d.city)}${i ? ` · 이전 장소에서 ${km({ lat: +pts[i - 1].lat, lon: +pts[i - 1].lon }, { lat: +d.lat, lon: +d.lon }).toFixed(1)}km` : ''}</span></div>
+    <button ${i ? '' : 'disabled'} onclick="moveStop(${i},-1)" title="위로">▲</button>
+    <button ${i < pts.length - 1 ? '' : 'disabled'} onclick="moveStop(${i},1)" title="아래로">▼</button>
+    <button onclick="removeStop(${i})" title="코스에서 빼기">✕</button></div>`).join('');
+}
+$('clist').onclick = e => { const it = e.target.closest('.tx'); if (!it) return;
+  const m = markers[it.parentNode.dataset.id]; map.flyTo(m.getLatLng(), Math.max(map.getZoom(), 13), { duration: .6 }); m.openPopup(); };
+// ---- 추천 코스: '자연' 장소를 지역별로 모아, 이동 거리 합이 가장 짧은 순서로 이어 줌 ----
+// 장소가 12곳 이하라 모든 경우를 따져 보는 정확한 방법(Held-Karp)으로 최단 순서를 구함
+function solvePaths(P) {
+  const n = P.length, full = (1 << n) - 1;
+  const cost = [...Array(n)].map(() => Array(n).fill(Infinity)), order = [...Array(n)].map(() => Array(n));
+  if (n === 1) { cost[0][0] = 0; order[0][0] = [0]; return { cost, order }; }
+  const D = P.map(a => P.map(b => km(a, b)));
+  for (let s = 0; s < n; s++) {
+    const dp = [...Array(1 << n)].map(() => new Float64Array(n).fill(Infinity));
+    const par = [...Array(1 << n)].map(() => new Int8Array(n).fill(-1));
+    dp[1 << s][s] = 0;
+    for (let m = 1; m <= full; m++) for (let e = 0; e < n; e++) {
+      const c = dp[m][e]; if (c === Infinity) continue;
+      for (let t = 0; t < n; t++) {
+        if (m >> t & 1) continue;
+        const nm = m | 1 << t, v = c + D[e][t];
+        if (v < dp[nm][t]) { dp[nm][t] = v; par[nm][t] = e; }
+      }
+    }
+    for (let e = 0; e < n; e++) {
+      if (e === s) continue;
+      cost[s][e] = dp[full][e];
+      const o = []; let m = full, c = e;
+      while (c !== -1) { o.push(c); const p = par[m][c]; m ^= 1 << c; c = p; }
+      order[s][e] = o.reverse();
+    }
+  }
+  return { cost, order };
+}
+const pt = d => ({ lat: +d.lat, lon: +d.lon });
+// 한 지역: 시작·끝점을 모두 시도해 가장 짧은 순서. 서쪽 끝에서 동쪽 끝으로 가도록 방향을 맞춤
+function bestOne(G) {
+  const S = solvePaths(G.map(pt)); let b = { c: Infinity };
+  S.cost.forEach((row, s) => row.forEach((c, e) => { if (c < b.c) b = { c, s, e }; }));
+  let ids = S.order[b.s][b.e].map(i => G[i]);
+  if (+ids[0].lon > +ids[ids.length - 1].lon) ids.reverse();
+  return ids;
+}
+// 두 지역(제주시 → 서귀포시): 각 지역 안에서는 최단으로, 두 지역을 잇는 지점까지 함께 따져 가장 짧게
+function bestTwo(A, B) {
+  const SA = solvePaths(A.map(pt)), SB = solvePaths(B.map(pt)); let b = { c: Infinity };
+  SA.cost.forEach((ra, sa) => ra.forEach((ca, ea) => SB.cost.forEach((rb, sb) => rb.forEach((cb, eb) => {
+    const c = ca + cb + km(pt(A[ea]), pt(B[sb])); if (c < b.c) b = { c, sa, ea, sb, eb };
+  }))));
+  return [...SA.order[b.sa][b.ea].map(i => A[i]), ...SB.order[b.sb][b.eb].map(i => B[i])];
+}
+const nature = city => DATA.filter(d => d.dir1 === '자연' && d.city === city);
+const RECS = [
+  { title: '🌿 제주시 자연 즐기기', desc: '제주시 지역의 자연 명소를 서쪽에서 동쪽으로', ids: bestOne(nature('제주시')) },
+  { title: '🌊 서귀포시 자연 즐기기', desc: '서귀포시 지역의 자연 명소를 서쪽에서 동쪽으로', ids: bestOne(nature('서귀포시')) },
+  { title: '🏝️ 제주도 자연 즐기기', desc: '제주시를 먼저 돌고 서귀포시로 이어지는 코스', ids: bestTwo(nature('제주시'), nature('서귀포시')) },
+].map(r => ({ ...r, ids: r.ids.map(d => d.id) }));
+const pathKm = ids => ids.reduce((s, id, i) => i ? s + km(pt(byId(ids[i - 1])), pt(byId(id))) : 0, 0);
+
+const recLayer = L.layerGroup();
+let recSel = -1;
+function drawRec(i) {
+  recSel = i; recLayer.clearLayers();
+  if (i >= 0) {
+    const pts = RECS[i].ids.map(byId);
+    L.polyline(pts.map(d => [+d.lat, +d.lon]), { color: '#1971c2', weight: 4, opacity: .9 }).addTo(recLayer);
+    pts.forEach((d, k) => L.marker([+d.lat, +d.lon], {
+      icon: L.divIcon({ className: '', html: `<div class="num blue">${k + 1}</div>`, iconSize: [26, 26], iconAnchor: [13, 13] }),
+      zIndexOffset: 1000, title: `${k + 1}. ${d.name}`,
+    }).on('click', () => markers[d.id].openPopup()).addTo(recLayer));
+    map.fitBounds(L.latLngBounds(pts.map(d => [+d.lat, +d.lon])).pad(0.15), { maxZoom: 13 });
+  }
+  renderRec();
+}
+function renderRec() {
+  $('rlist').innerHTML = RECS.map((r, i) => `<div class="rec${i === recSel ? ' on' : ''}" onclick="drawRec(${i})">
+    <h4>${r.title}</h4><div class="meta">${r.ids.length}곳 · 직선거리 합계 약 ${pathKm(r.ids).toFixed(1)} km<br>${r.desc}</div>
+    ${i === recSel ? `<ol>${r.ids.map(id => `<li onclick="event.stopPropagation();goStop('${id}')">${esc(byId(id).name)}</li>`).join('')}</ol>
+      <div class="cact"><button class="p" onclick="event.stopPropagation();useRec(${i})">♥ 내 코스로 담기</button></div>` : ''}</div>`).join('');
+}
+function goStop(id) { const m = markers[id]; map.flyTo(m.getLatLng(), 13, { duration: .6 }); m.openPopup(); }
+function useRec(i) {
+  if (course.length && !confirm('지금 만든 내 코스가 추천 코스로 바뀝니다. 계속할까요?')) return;
+  course = [...RECS[i].ids]; saveCourse(); showTab('course'); fitCourse();
+}
+
+function showTab(t) {
+  [['list', 'tabList'], ['course', 'tabCourse'], ['rec', 'tabRec']].forEach(([k, id]) => $(id).classList.toggle('on', k === t));
+  $('count').style.display = $('list').style.display = t === 'list' ? '' : 'none';
+  $('courseView').classList.toggle('on', t === 'course');
+  $('recView').classList.toggle('on', t === 'rec');
+  // 내 코스 / 추천 코스 선은 해당 탭에서만 지도에 보여 줌
+  t === 'rec' ? (map.removeLayer(courseLayer), recLayer.addTo(map)) : (map.removeLayer(recLayer), courseLayer.addTo(map));
+}
+$('tabList').onclick = () => showTab('list');
+$('tabCourse').onclick = () => showTab('course');
+$('tabRec').onclick = () => { showTab('rec'); renderRec(); };
+
+$('list').onclick = e => {
+  const it = e.target.closest('.item'); if (!it) return;
+  const m = markers[it.dataset.id];
+  map.flyTo(m.getLatLng(), Math.max(map.getZoom(), 13), { duration: .6 });
+  m.openPopup(); mark(it.dataset.id);
+};
+
+function openDetail(id) {
+  const d = DATA.find(x => x.id === id);
+  const rows = [['고유번호', d.id], ['분류', `${d.cat} > ${d.dir1}${none(d.dir2) ? '' : ' > ' + d.dir2}`], ['주소', `${d.addr} (${d.zip})`],
+    ['좌표', `${d.lat}, ${d.lon} (${d.crs})`], ['저작자', d.author], ['주제', d.subject], ['발행자', d.publisher], ['발행일', d.date], ['출처', d.source], ['기준일', d.base]]
+    .filter(([, v]) => !none(v));
+  $('box').innerHTML = `<h2>${esc(d.name)}</h2><div>${esc(d.title)}${none(d.sub) ? '' : ' — ' + esc(d.sub)}</div>
+    <dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
+    ${none(d.body) ? '' : `<b>내용</b><div class="body">${esc(d.body)}</div>`}
+    <div class="btns">${none(d.url) ? '' : `<a class="p" target="_blank" href="${esc(d.url)}">제주시 상세 페이지</a>`}
+      <button onclick="closeDetail()">닫기</button></div>`;
+  $('modal').classList.add('on');
+}
+function closeDetail() { $('modal').classList.remove('on'); }
+$('modal').onclick = e => { if (e.target.id === 'modal') closeDetail(); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+['q', 'cat', 'dir', 'city'].forEach(id => $(id).addEventListener('input', () => render(true)));
+renderCourse();
+render(false);
+</script>
+<script>
+(function () {
+  var boot = document.getElementById('boot'), msg = document.getElementById('bootMsg');
+  function fail(text) {
+    boot.className = 'err';
+    msg.innerHTML = text;
+  }
+  // /jeju/... 는 vite 서버(proxy)가 .env.local 의 주소와 인증키를 붙여 odcloud API 로 전달함
+  // 한 페이지에 다 안 오면 totalCount 만큼 이어서 받아 옴
+  async function fetchAll(name, path) {
+    var rows = [], page = 1;
+    for (;;) {
+      var r = await fetch(path + '?page=' + page + '&perPage=200');
+      if (r.status === 401 || r.status === 403) throw new Error(name + ' API 인증 실패(' + r.status + '): .env.local 의 인증키를 확인하세요.');
+      if (r.status === 404) throw new Error(name + ' API 를 찾을 수 없어요(404). npm run dev 로 실행했는지, .env.local 의 주소를 확인하세요.');
+      if (!r.ok) throw new Error(name + ' API 오류(' + r.status + ')');
+      var j;
+      try { j = await r.json(); } catch (e) { throw new Error(name + ' API 응답을 읽지 못했어요. npm run dev 로 실행했는지 확인하세요.'); }
+      rows = rows.concat(j.data || []);
+      if (!(j.data || []).length || rows.length >= j.totalCount) break;
+      page++;
+    }
+    return rows;
+  }
+  async function load() {
+    var res = await Promise.all([fetchAll('일반정보', '/jeju/info'), fetchAll('위치정보', '/jeju/location')]);
+    var info = res[0], loc = res[1], L = {};
+    loc.forEach(function (x) { L[x['데이터 고유번호']] = x; });
+    return info.map(function (g) {
+      var l = L[g['데이터 고유번호']] || {};
+      return {
+        id: String(g['데이터 고유번호']), name: g['장소명'], lat: g['위도'], lon: g['경도'],
+        cat: g['분류'], dir1: g['디렉토리1'], dir2: g['디렉토리2'], title: g['제목'], sub: g['부제목'],
+        author: g['저작자'], subject: g['주제'], body: g['내용'], publisher: g['발행자'], date: g['발행일'],
+        source: g['출처'], base: g['데이터기준일자'],
+        addr: l['위치'] || '', zip: String(l['우편번호'] || ''), crs: l['좌표계값'] || '',
+        url: l['데이터 상세보기 URL'] || g['링크'] || '',
+      };
+    });
+  }
+  load().then(function (data) {
+    window.DATA = data;
+    var s = document.createElement('script');
+    s.textContent = document.getElementById('main').textContent;
+    document.body.appendChild(s);
+    boot.remove();
+  }).catch(function (e) {
+    var hint = e instanceof TypeError ? '<br>네트워크가 막혔거나 인터넷 연결이 없을 수 있어요.' : '';
+    fail('데이터를 불러오지 못했습니다.<br><b>' + String(e.message).replace(/</g, '&lt;') + '</b>' + hint);
+  });
+})();
+</script>
+</body>
+</html>
