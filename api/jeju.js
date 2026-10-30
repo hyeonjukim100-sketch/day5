@@ -3,8 +3,10 @@
 // /jeju/info, /jeju/location 요청은 vercel.json 의 rewrites 로 이 함수에 연결된다. (개발 중에는 vite.config.js 프록시가 같은 일을 함)
 export default async function handler(req, res) {
   const which = req.query.which === 'location' ? 'LOCATION' : 'INFO'
-  const url = process.env[`JEJU_${which}_URL`]
-  const key = process.env[`JEJU_${which}_KEY`]
+  // 환경변수에 붙여 넣을 때 섞이기 쉬운 앞뒤 공백·줄바꿈·따옴표는 제거
+  const clean = (v) => String(v || '').trim().replace(/^["']+|["']+$/g, '').trim()
+  const url = clean(process.env[`JEJU_${which}_URL`])
+  const key = clean(process.env[`JEJU_${which}_KEY`])
   if (!url || !key) {
     return res.status(500).json({ error: `환경변수 JEJU_${which}_URL / JEJU_${which}_KEY 가 설정되지 않았어요.` })
   }
